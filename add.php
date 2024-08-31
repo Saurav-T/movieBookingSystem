@@ -1,3 +1,7 @@
+<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@1.16.1/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 <?php
 session_start();
 include('functions.php');
@@ -25,6 +29,7 @@ function addValue($tablename)
         $columns = [];
         $placeholders = [];
         $values = [];
+        $emailValue = '';
 
         // Loop through fields to collect values from POST, excluding primary and foreign keys
         foreach ($fields as $field) {
@@ -40,7 +45,42 @@ function addValue($tablename)
             // Collect field names and placeholders for prepared statement
             $columns[] = $fieldName;
             $placeholders[] = '?';
-            $values[] = $_POST[$fieldName] ?? ''; // Fetch value from POST request
+
+            // Check if the field is a password field and hash it before adding
+            if (stripos($fieldName, 'password') !== false) {
+                // Hash the password using bcrypt
+                $hashedPassword = password_hash($_POST[$fieldName], PASSWORD_BCRYPT);
+                $values[] = $hashedPassword;
+            } else {
+                // Fetch value from POST request
+                $value = $_POST[$fieldName] ?? '';
+                $values[] = $value;
+
+                // Store the email value to check for duplicacy
+                if (stripos($fieldName, 'email') !== false) {
+                    $emailValue = $value;
+                }
+            }
+        }
+
+        // Check for duplicate email if an email field is found
+        if ($emailValue !== '') {
+            $checkEmailSql = "SELECT * FROM $tablename WHERE email = ?";
+            $stmt = mysqli_prepare($conn, $checkEmailSql);
+            mysqli_stmt_bind_param($stmt, 's', $emailValue);
+            mysqli_stmt_execute($stmt);
+            $emailCheckResult = mysqli_stmt_get_result($stmt);
+
+            // If an email already exists, display an error message
+            if (mysqli_num_rows($emailCheckResult) > 0) {
+                $_SESSION['alert'] = '<div class="alert alert-warning" role="alert">This email already exists. Please use a different email.</div>';
+                mysqli_stmt_close($stmt);
+                mysqli_close($conn);
+                header("Location: " . $_SERVER['PHP_SELF'] . "?tablename=" . urlencode($tablename));
+                exit; // Exit to prevent inserting duplicate record
+            }
+
+            mysqli_stmt_close($stmt);
         }
 
         // Create SQL INSERT query dynamically
@@ -54,15 +94,22 @@ function addValue($tablename)
 
         // Execute statement and check for errors
         if (mysqli_stmt_execute($stmt)) {
-            echo "Record added successfully!";
+            $_SESSION['alert'] = '<div class="alert alert-success" role="alert">Record added successfully!</div>';
         } else {
-            echo "Error adding record: " . mysqli_error($conn);
+            $_SESSION['alert'] = '<div class="alert alert-danger" role="alert">Error adding record: ' . mysqli_error($conn) . '</div>';
         }
 
         mysqli_stmt_close($stmt);
+        mysqli_close($conn);
+        header("Location: " . $_SERVER['PHP_SELF'] . "?tablename=" . urlencode($tablename));
+        exit; // Redirect to display the message
     }
 
-    // Generate form based on fetched fields
+    // Display the form and alerts within the card
+    echo '<div class="d-flex justify-content-center align-items-center" style="min-height: 100vh;">';
+    echo '<div class="card p-4" style="width: 350px;">';
+
+    echo '<h5 class="card-title text-center mb-4">Add Record</h5>';
     echo '<form method="post" action="' . htmlspecialchars($_SERVER['PHP_SELF']) . '?tablename=' . urlencode($tablename) . '">';
     foreach ($fields as $field) {
         $fieldName = htmlspecialchars($field->name);
@@ -74,21 +121,32 @@ function addValue($tablename)
             continue;
         }
 
-        // Generate form input for each field
-        echo '<div>';
+        // Determine input type
+        $inputType = stripos($fieldName, 'password') !== false ? 'password' : 'text';
+
+        // Generate form input for each field with Bootstrap classes
+        echo '<div class="form-group">';
         echo '<label for="' . $fieldName . '">' . ucfirst($fieldName) . ':</label>';
-        echo '<input type="text" id="' . $fieldName . '" name="' . $fieldName . '" required>';
+        echo '<input type="' . $inputType . '" class="form-control form-control-sm" id="' . $fieldName . '" name="' . $fieldName . '" required>';
         echo '</div>';
     }
-    echo '<div><input type="submit" value="Add Record"></div>';
+    echo '<button type="submit" class="btn btn-primary btn-block btn-sm">Add Record</button>';
     echo '</form>';
+       // Display alert message if exists
+       if (isset($_SESSION['alert'])) {
+        echo $_SESSION['alert'];
+        unset($_SESSION['alert']); // Clear alert after displaying
+    }
+    echo '</div>';
+    echo '</div>';
 
-    mysqli_close($conn);
 }
 
 // Call the function with the table name passed via query string
 if (isset($_GET['tablename'])) {
     addValue($_GET['tablename']);
 } else {
-    echo "Table name not provided.";
+    echo '<div class="container mt-4"><div class="alert alert-warning" role="alert">Table name not provided.</div></div>';
 }
+?>
+
