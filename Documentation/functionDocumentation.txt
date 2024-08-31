@@ -1,0 +1,34 @@
+Function Documentation:
+
+function getDbConnection() : 
+- takes no parameters
+- the function is initialized with the servername, username, password and database name
+- returns connection object
+
+function verifyCredentials($tablename, $username, $password, $usernameColumn, $passwordColumn):
+- takes five parameters (3 Mandatory and 2 Optional)
+	- $tablename : the name of the table in the database from where we want to verify the credentials
+	- $username : the username input fetched from the form
+	- $password : the password input fetched from the form
+	- $usernameColumn : takes the name of the column of where the username is stored in the database.
+			    the default value is set to 'username'
+	- $passwordColumn : takes the name of the column of where the password is stored in the database.
+			    the default value is set to 'password'
+- hashes the password with SHA-256 function 
+
+* Note: The passwords in the database are hashed with SHA-256 function for secuirity purposes
+
+- fetches the username and password from the database
+	- the columns in the table is to be set as username and password to apply this function
+- checks if the entered credentials exist in the database table using num_rows function
+- if the credentials are
+	valid : the function returns true
+	invalid : the function returns false
+
+function getTableColumns($tablename)
+- takes one parameter
+	- $tablename : the name of the table of which you want to fetch the column names of
+- the function uses SHOW query to get the names of all the columns in the given table of the database
+- returns an array of column names
+
+function insertIntoTable
