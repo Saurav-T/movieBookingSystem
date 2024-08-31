@@ -18,7 +18,7 @@ function getDbConnection() {
     return $conn;
 }
 
-function generatetable($tablename) {
+function generateTable($tablename) {
     $conn = getDbConnection();
 
     // Escaping the table name to prevent SQL injection (though not foolproof)
@@ -31,31 +31,52 @@ function generatetable($tablename) {
         die('Query failed: ' . mysqli_error($conn));
     }
 
+    // Get table fields
+    $fields = mysqli_fetch_fields($result);
+
+    // Start table
     echo "<table border='1' cellspacing='0' cellpadding='5'>";
     echo "<tr>";
-    echo "<th>ID</th>";
-    echo "<th>Name</th>";
-    echo "<th>Email</th>";
-    echo "<th>Password</th>";
+
+    // Generate table headers
+    foreach ($fields as $field) {
+        // Skip primary key and foreign keys if needed
+        $isPrimaryKey = (bool)($field->flags & MYSQLI_PRI_KEY_FLAG);
+        if ($isPrimaryKey) {
+            continue;
+        }
+        echo "<th>" . htmlspecialchars(ucfirst($field->name), ENT_QUOTES, 'UTF-8') . "</th>";
+    }
     echo "<th>Edit</th>";
     echo "<th>Delete</th>";
     echo "</tr>";
 
+    // Generate table rows
     while ($row = mysqli_fetch_assoc($result)) {
         echo "<tr>";
-        echo "<td>" . htmlspecialchars($row['id'], ENT_QUOTES, 'UTF-8') . "</td>";
-        echo "<td>" . htmlspecialchars($row['name'], ENT_QUOTES, 'UTF-8') . "</td>";
-        echo "<td>" . htmlspecialchars($row['email'], ENT_QUOTES, 'UTF-8') . "</td>";
-        echo "<td>" . htmlspecialchars($row['password'], ENT_QUOTES, 'UTF-8') . "</td>";
-        echo "<td><a href='edit.php?id=" . urlencode($row['id']) . "'>Edit</a></td>";
-        echo "<td><a href='delete.php?id=" . urlencode($row['id']) . "'>Delete</a></td>";
+
+        foreach ($fields as $field) {
+            // Skip primary key and foreign keys if needed
+            $isPrimaryKey = (bool)($field->flags & MYSQLI_PRI_KEY_FLAG);
+            if ($isPrimaryKey) {
+                continue;
+            }
+            $fieldName = $field->name;
+            echo "<td>" . htmlspecialchars($row[$fieldName], ENT_QUOTES, 'UTF-8') . "</td>";
+        }
+
+        // Add Edit and Delete links
+        $id = urlencode($row['id']); // Assumes 'id' is the primary key
+        echo "<td><a href='edit.php?id=$id'>Edit</a></td>";
+        echo "<td><a href='delete.php?id=$id'>Delete</a></td>";
+
         echo "</tr>";
     }
 
+    // End table
     echo "</table>";
 
     mysqli_free_result($result);
     mysqli_close($conn);
 }
-
 ?>
