@@ -1,7 +1,7 @@
 
 <?php
 session_start();
-include('functions.php');
+include('../Functionalities/functions.php');
 includeBootstrap();
 // Function to dynamically generate a form and insert values into the specified table
 function addValue($tablename)

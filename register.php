@@ -1,53 +1,51 @@
 <?php
-include('functions.php');
+include('Functionalities/functions.php'); // Correct the path if needed
 
 $error = '';
+$determiningNumber = 0; // Initialize
 
-if(isset($_POST['submit'])){
+if (isset($_POST['submit'])) {
     // Sanitize input
     $email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
     $username = filter_input(INPUT_POST, 'username', FILTER_SANITIZE_SPECIAL_CHARS);
     $password = filter_input(INPUT_POST, 'password', FILTER_SANITIZE_SPECIAL_CHARS);
-    $determiningNumber = 0;
-    // Hash the password before storing it
     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
     // Get database connection
     $conn = getDbConnection();
 
-    if($conn->connect_error){
+    if ($conn->connect_error) {
         die("Connection failed: " . $conn->connect_error);
         $error = "Could not connect to the database. Try again later.";
         $determiningNumber = 0;
-    }
-
-    // Prepare the SELECT statement to check if the email already exists
-    $stmt = $conn->prepare("SELECT * FROM admin WHERE email = ?");
-    $stmt->bind_param('s', $email);
-    $stmt->execute();
-    $result = $stmt->get_result();
-
-    if ($result->num_rows > 0) {
-        $error = "Email already exists. Please try another.";
-        $determiningNumber = -1;
     } else {
-        // Prepare the INSERT statement
-        $stmt = $conn->prepare("INSERT INTO admin (email, username, password) VALUES (?, ?, ?)");
-        $stmt->bind_param('sss', $email, $username, $hashed_password);
+        // Prepare the SELECT statement to check if the email already exists
+        $stmt = $conn->prepare("SELECT * FROM admin WHERE email = ?");
+        $stmt->bind_param('s', $email);
+        $stmt->execute();
+        $result = $stmt->get_result();
 
-        if($stmt->execute()){
-            // Success
-            $msg = "Registration Successful. Redirect to <a href='index.php'>Login</a>?";
-            $determiningNumber = 1;
+        if ($result->num_rows > 0) {
+            $error = "Email already exists. Please try another.";
+            $determiningNumber = -1;
         } else {
-            // Error handling
-            $error = "Error: " . $stmt->error;
-        }
-    }
+            // Prepare the INSERT statement
+            $stmt = $conn->prepare("INSERT INTO admin (email, username, password) VALUES (?, ?, ?)");
+            $stmt->bind_param('sss', $email, $username, $hashed_password);
 
-    // Close the prepared statement and the connection
-    $stmt->close();
-    $conn->close();
+            if ($stmt->execute()) {
+                $msg = "Registration Successful. Redirect to <a href='index.php'>Login</a>?";
+                $determiningNumber = 1;
+            } else {
+                $error = "Error: " . $stmt->error;
+                $determiningNumber = -1; // Set to -1 on error
+            }
+        }
+
+        // Close the prepared statement and the connection
+        $stmt->close();
+        $conn->close();
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -55,7 +53,7 @@ if(isset($_POST['submit'])){
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login Page</title>
+    <title>Registration Page</title>
     <!-- Bootstrap CSS -->
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <style>
@@ -88,7 +86,7 @@ if(isset($_POST['submit'])){
 <body>
     <div class="container">
         <div class="form-container">
-            <h2 class="form-title text-center"></h2>
+            <h2 class="form-title text-center">Register</h2>
             <form action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>" method="post">
                 <div class="form-group">
                     <label for="email">Email:</label>
@@ -102,7 +100,7 @@ if(isset($_POST['submit'])){
                     <label for="password">Password:</label>
                     <input type="password" id="password" name="password" class="form-control" required>
                 </div>
-                <?php if ($determiningNumber = -1 || 0): ?>
+                <?php if ($determiningNumber == -1): ?>
                     <div class="error-message">
                         <?php echo htmlspecialchars($error); ?>
                     </div>

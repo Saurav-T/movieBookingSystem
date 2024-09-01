@@ -1,7 +1,7 @@
 <?php
 session_start();
 // Include the file containing the database connection function
-include('functions.php');
+include('Functionalities/functions.php');
 
 // Initialize an empty error variable
 $error = '';
@@ -63,8 +63,8 @@ if (isset($_POST['submit'])) {
         // Set the session variable
         $_SESSION['username'] = $username;
         // Redirect to the dashboard page
-        header("Location: adminPanel.php");
-        exit; // Ensure no further code is executed after redirection
+       header("Location: userInformationAP/adminPanel.php");
+        exit(); // Ensure no further code is executed after redirection
     } else {
         $error = "Invalid credentials. Please try again.";
     }

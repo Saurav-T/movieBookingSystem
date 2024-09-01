@@ -1,6 +1,6 @@
 <?php
 session_start();
-include('functions.php');
+include('../Functionalities/functions.php');
 includeBootstrap();
 
 function generateEditForm($tablename) {
