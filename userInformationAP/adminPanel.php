@@ -1,4 +1,4 @@
-<?php session_start() ?>
+<?php session_start(); ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -42,7 +42,7 @@
         <h4 class="text-white">Admin Panel</h4>
         <ul class="nav flex-column">
             <li class="nav-item">
-                <a class="nav-link" href="#" data-page="test1.php">Dashboard</a>
+                <a class="nav-link" href="#" data-page="dashboard.php">Dashboard</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="#" data-page="users.php">Users</a>
@@ -85,9 +85,12 @@
                 });
         }
 
-        // Optionally, load a default page on first load
+        // Load the appropriate content based on the URL parameter, or default to 'dashboard.php'
         window.onload = function () {
-            loadContent('dashboard.php');
+            // Get the URL parameter value for 'page', if any
+            const urlParams = new URLSearchParams(window.location.search);
+            const page = urlParams.get('page') || 'dashboard.php'; // Default to 'dashboard.php' if no parameter is provided
+            loadContent(page);
         };
     </script>
 
